@@ -122,6 +122,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     class BBoxInfoList { public List<BBoxInfo> items; }
     private BBoxInfoList bboxInfoList;
     private Color[] colors;
+    private Texture2D[] colorTextures;
 
 
     // The current frame rate value
@@ -368,6 +369,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         bboxInfoList = JsonUtility.FromJson<BBoxInfoList>(bboxInfo.text);
 
         colors = new Color[bboxInfoList.items.Count];
+        colorTextures = new Texture2D[bboxInfoList.items.Count];
 
         for (int i = 0; i < colors.Length; i++)
         {
@@ -375,6 +377,10 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
                 bboxInfoList.items[i].color[0],
                 bboxInfoList.items[i].color[1],
                 bboxInfoList.items[i].color[2]);
+            colorTextures[i] = new Texture2D(1, 1);
+            colorTextures[i].SetPixel(0, 0, colors[i]);
+            colorTextures[i].Apply();
+
         }
 
         boxTex = Texture2D.whiteTexture;
@@ -710,20 +716,24 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         {
             fontSize = (int)(Screen.width * 11e-3)
         };
+        bboxStyle.alignment = TextAnchor.MiddleLeft;
 
         foreach (Object objectInfo in objectInfoArray)
         {
             Color color = colors[objectInfo.label];
             string name = bboxInfoList.items[objectInfo.label].label;
 
+            
+
+            string labelText = $" {name}: {(objectInfo.prob * 100).ToString("0.##")}%";
             labelRect.x = objectInfo.x0;
-            labelRect.y = Screen.height - objectInfo.y0 - 20;
+            labelRect.y = Screen.height - objectInfo.y0;
             labelRect.width = objectInfo.width;
-            labelRect.height = objectInfo.height;
+            labelRect.height = (int)(Screen.width * 1.75e-2); ;
 
-            bboxStyle.normal.textColor = color;
-
-            string labelText = $"{name}: {(objectInfo.prob * 100).ToString("0.##")}%";
+            bboxStyle.normal.textColor = color.grayscale > 0.5 ? Color.black : Color.white;
+            bboxStyle.normal.background = colorTextures[objectInfo.label];
+            
             GUI.Label(labelRect, new GUIContent(labelText), bboxStyle);
 
             boxRect.x = objectInfo.x0;
@@ -732,8 +742,15 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
             boxRect.height = objectInfo.height;
 
             int lineWidth = (int)(Screen.width * 1.75e-3);
-            GUI.DrawTexture(boxRect, boxTex, ScaleMode.StretchToFill,
-                true, 0, color, 3, lineWidth);
+            GUI.DrawTexture(
+                position: boxRect, 
+                image: boxTex, 
+                scaleMode: ScaleMode.StretchToFill,
+                alphaBlend: true, 
+                imageAspect: 0, 
+                color:color, 
+                borderWidth: lineWidth, 
+                borderRadius: 0);
         }
     }
 
