@@ -29,7 +29,7 @@ struct GridAndStride
 //std::string class_names[] = { "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush" };
 
 // RGB color list
-float color_list[][3] = { {0.89009, 0.03805, 0.30262}, {0.99718, 0.65819, 0.51767}, {0.58328, 0.34627, 0.61686}, {0.98407, 0.67736, 0.54331} };
+float color_list[][3] = { {0.1583, 0.8625, 0.23597}, {0.4083,0.20284, 0.35956 }, { 0.0408, 0.21456, 0.666 }, { 0.60176, 0.72458, 0.03401 } };
 // Fridge class labels
 std::string class_names[] = { "carton", "milk_bottle", "can", "water_bottle" };
 
@@ -220,6 +220,7 @@ void draw_objects(cv::Mat& input_img, std::vector<Object>& objects)
 {
 	// Make a copy of the input image
 	cv::Mat image = input_img.clone();
+	
 	// Iterate through selected proposals
 	for (int i : proposal_indices)
 	{
@@ -241,19 +242,20 @@ void draw_objects(cv::Mat& input_img, std::vector<Object>& objects)
 		// Get text box size
 		int baseLine = 0;
 		cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine);
+		label_size.width = rect.width;
 		// Clamp bounding box to image border
 		int x = std::min((int)rect.x, image.cols);
 		int y = std::min((int)rect.y, image.rows);
 		//  Define text box
 		cv::Rect text_box(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine));
 		// Draw text box
-		cv::rectangle(image, text_box, (color * 0.7 * 255), -1);
+		cv::rectangle(image, text_box, (color * 255), -1);
 		// Add text
-		cv::Scalar txt_color = cv::mean(color)[0] > 0.5 ? cv::Scalar(0, 0, 0) : cv::Scalar(255, 255, 255);
+		cv::Scalar txt_color = cv::mean(color)[0] > 0.3 ? cv::Scalar(0, 0, 0) : cv::Scalar(255, 255, 255);
 		cv::putText(image, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4, txt_color, 1);
 	}
 
-	// Convert input image back to BGR format
+	//// Convert input image back to BGR format
 	cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 	// Save annotated image
 	std::string out_name = "output.jpg";
