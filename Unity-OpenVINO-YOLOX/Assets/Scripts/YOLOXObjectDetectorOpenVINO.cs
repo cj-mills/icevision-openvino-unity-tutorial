@@ -15,13 +15,19 @@ public class Startup
 {
     static Startup()
     {
+        // Get all files named "plugins.xml"
         string[] files = Directory.GetFiles("./Assets/", "plugins.xml", SearchOption.AllDirectories);
+        // Iterate through each found file
         foreach (string file in files)
         {
+            // Check if the file is in the "x86_64" folder
             if (file.Contains("x86_64"))
             {
+                // Define file path for StreamingAssets folder
                 string targetPath = $"{Application.streamingAssetsPath}/plugins.xml";
+                // Print the source file path
                 Debug.Log(file);
+                // Only copy the file to the StreamingAssets folder if it is not already present
                 if (!File.Exists(targetPath)) File.Copy(file, targetPath);
             }
         }
@@ -34,7 +40,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     [Header("Scene Objects")]
     [Tooltip("The Screen object for the scene")]
     public Transform screen;
-    [Tooltip("")]
+    [Tooltip("Mirror the in-game screen.")]
     public bool mirrorScreen = true;
 
     [Header("Data Processing")]
@@ -48,7 +54,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     [Header("Output Processing")]
     [Tooltip("A json file containing the class labels and colors for bounding boxes")]
     public TextAsset bboxInfo;
-    [Tooltip("")]
+    [Tooltip("Minimum confidence score for keeping detected objects")]
     [Range(0,1f)]
     public float minConfidence = 0.3f;
 
@@ -86,7 +92,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     public Dropdown webcamDropdown;
     [Tooltip("The dropdown menu that lists available OpenVINO models")]
     public Dropdown modelDropdown;
-    [Tooltip("")]
+    [Tooltip("The dropdown menu that lists available OpenVINO devices")]
     public Dropdown deviceDropdown;
 
     [Header("OpenVINO")]
@@ -114,16 +120,18 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     // Stores the number of detected objects
     private int numObjects;
 
-
+    // A class for parsing in colormaps from a JSON file
     [System.Serializable]
-    class BBoxInfo { public string label; public float[] color; }
-
+    class ColorMap { public string label; public float[] color; }
+    // A class for reading in a list of colormaps from a JSON file
     [System.Serializable]
-    class BBoxInfoList { public List<BBoxInfo> items; }
-    private BBoxInfoList bboxInfoList;
+    class ColorMapList { public List<ColorMap> items; }
+    // Stores a list of colormaps from a JSON file
+    private ColorMapList colormapList;
+    // A list of colors that map to class labels
     private Color[] colors;
+    // A list of single pixel textures that map to class labels
     private Texture2D[] colorTextures;
-
 
     // The current frame rate value
     private int fps = 0;
@@ -134,7 +142,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     private List<string> modelPaths = new List<string>();
     // Names of the available OpenVINO models
     private List<string> modelNames = new List<string>();
-
+    // Names of the available OpenVINO devices
     private List<string> openvinoDevices = new List<string>();
 
     // Indicate that the members of the struct are laid out sequentially
@@ -168,10 +176,8 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         }
     }
 
-
+    // Stores information for the current list of detected objects
     private Object[] objectInfoArray;
-
-    private Texture2D boxTex;
 
 
     // Name of the DLL file
@@ -271,7 +277,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
 
 
     /// <summary>
-    /// 
+    /// Get the names of the available OpenVINO devices
     /// </summary>
     private void GetOpenVINODevices()
     {
@@ -334,11 +340,15 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     }
 
 
+    // Awake is called when the script instance is being loaded
     private void Awake()
     {
 #if !UNITY_EDITOR
+        // Define the path for the plugins.xml file in the StreamingAssets folder
         string sourcePath = $"{Application.streamingAssetsPath}/plugins.xml";
+        // Define the destination path for the plugins.xml file
         string targetPath = $"{Application.dataPath}/Plugins/x86_64/plugins.xml";
+        // Only copy the file if it is not already present at the destination
         if (!File.Exists(targetPath)) File.Copy(sourcePath, targetPath);
 #endif
     }
@@ -365,31 +375,31 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         // Resize and position the main camera using the source image dimensions
         InitializeCamera(screenDims);
 
-        // Initialize list of class labels from JSON file
-        bboxInfoList = JsonUtility.FromJson<BBoxInfoList>(bboxInfo.text);
+        // Initialize list of color maps from JSON file
+        colormapList = JsonUtility.FromJson<ColorMapList>(bboxInfo.text);
+        // Initialize the list of colors
+        colors = new Color[colormapList.items.Count];
+        // Initialize the list of color textures
+        colorTextures = new Texture2D[colormapList.items.Count];
 
-        colors = new Color[bboxInfoList.items.Count];
-        colorTextures = new Texture2D[bboxInfoList.items.Count];
-
+        // Populate the color and color texture arrays
         for (int i = 0; i < colors.Length; i++)
         {
+            // Create a new color object
             colors[i] = new Color(
-                bboxInfoList.items[i].color[0],
-                bboxInfoList.items[i].color[1],
-                bboxInfoList.items[i].color[2]);
+                colormapList.items[i].color[0],
+                colormapList.items[i].color[1],
+                colormapList.items[i].color[2]);
+            // Create a single-pixel texture
             colorTextures[i] = new Texture2D(1, 1);
             colorTextures[i].SetPixel(0, 0, colors[i]);
             colorTextures[i].Apply();
 
         }
 
-        boxTex = Texture2D.whiteTexture;
-
-        
-
         // Get the file paths for available OpenVINO models
         GetOpenVINOModels();
-        // 
+        // Get the names of available OpenVINO devices
         GetOpenVINODevices();
 
         // Initialize the webcam dropdown list
@@ -700,7 +710,6 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
             fpsTimer = Time.unscaledTime + fpsRefreshRate;
         }
 
-
         // Adjust screen position when not showing predicted class
         Rect fpsRect = displayProposalCount ? slot2 : slot1;
         if (displayFPS) GUI.Label(fpsRect, new GUIContent($"FPS: {fps}"), style);
@@ -721,10 +730,10 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         foreach (Object objectInfo in objectInfoArray)
         {
             Color color = colors[objectInfo.label];
-            string name = bboxInfoList.items[objectInfo.label].label;
+            string name = colormapList.items[objectInfo.label].label;
 
 
-            int labelBoxheight = (int)(Screen.width * 1.5e-2);
+            int labelBoxheight = (int)(Screen.width * 1e-2);
             string labelText = $" {name}: {(objectInfo.prob * 100).ToString("0.##")}%";
             labelRect.x = objectInfo.x0;
             labelRect.y = Screen.height - objectInfo.y0 - labelBoxheight;
@@ -744,7 +753,7 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
             int lineWidth = (int)(Screen.width * 1.75e-3);
             GUI.DrawTexture(
                 position: boxRect, 
-                image: boxTex, 
+                image: Texture2D.whiteTexture, 
                 scaleMode: ScaleMode.StretchToFill,
                 alphaBlend: true, 
                 imageAspect: 0, 
