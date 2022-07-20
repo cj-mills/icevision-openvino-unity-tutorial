@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -717,43 +716,56 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         Rect fpsRect = displayProposalCount ? slot2 : slot1;
         if (displayFPS) GUI.Label(fpsRect, new GUIContent($"FPS: {fps}"), style);
 
+        // Check whether to render bounding boxes
+        if (!displayBoundingBoxes || numObjects < 1) return;
 
-        if (!displayBoundingBoxes) return;
-
-
+        // Initialize a rectangle for label text
         Rect labelRect = new Rect();
+        // Initialize a rectangle for bounding boxes
         Rect boxRect = new Rect();
 
-        GUIStyle bboxStyle = new GUIStyle
+        GUIStyle labelStyle = new GUIStyle
         {
             fontSize = (int)(Screen.width * 11e-3)
         };
-        bboxStyle.alignment = TextAnchor.MiddleLeft;
+        labelStyle.alignment = TextAnchor.MiddleLeft;
 
         foreach (Object objectInfo in objectInfoArray)
         {
+            // Skip object if label index is out of bounds
+            if (objectInfo.label > colors.Length - 1) continue;
+
+            // Get color for current class index
             Color color = colors[objectInfo.label];
+            // Get label for current class index
             string name = colormapList.items[objectInfo.label].label;
 
-
+            // Scale label text box based on display resolution
             int labelBoxheight = (int)(Screen.width * 1e-2);
+            // Include class label and confidence score in label text
             string labelText = $" {name}: {(objectInfo.prob * 100).ToString("0.##")}%";
+            // Set label text coordinates
             labelRect.x = objectInfo.x0;
             labelRect.y = Screen.height - objectInfo.y0 - labelBoxheight;
+            // Set label text dimensions
             labelRect.width = objectInfo.width;
             labelRect.height = labelBoxheight;
+            // Set label text and backgound color
+            labelStyle.normal.textColor = color.grayscale > 0.5 ? Color.black : Color.white;
+            labelStyle.normal.background = colorTextures[objectInfo.label];
+            // Render label
+            GUI.Label(labelRect, new GUIContent(labelText), labelStyle);
 
-            bboxStyle.normal.textColor = color.grayscale > 0.5 ? Color.black : Color.white;
-            bboxStyle.normal.background = colorTextures[objectInfo.label];
-            
-            GUI.Label(labelRect, new GUIContent(labelText), bboxStyle);
-
+            // Set bounding box coordinates
             boxRect.x = objectInfo.x0;
             boxRect.y = Screen.height - objectInfo.y0;
+            // Set bounding box dimensions
             boxRect.width = objectInfo.width;
             boxRect.height = objectInfo.height;
 
+            // Scale bounding box line width based on display resolution
             int lineWidth = (int)(Screen.width * 1.75e-3);
+            // Render bounding box
             GUI.DrawTexture(
                 position: boxRect, 
                 image: Texture2D.whiteTexture, 
