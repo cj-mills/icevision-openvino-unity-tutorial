@@ -522,9 +522,9 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
 
 
     /// <summary>
-    /// Update the list of bounding boxes based on the latest output from the model
+    /// Scale the latest bounding boxes to the display resolution
     /// </summary>
-    public void UpdateObjectInfo()
+    public void ScaleBoundingBoxes()
     {
         // Process new detected objects
         for (int i = 0; i < objectInfoArray.Length; i++)
@@ -545,11 +545,13 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
 
             float displayScale = Screen.height / screen.transform.localScale.y;
 
+            // Scale bounding boxes to display
             objectInfoArray[i].x0 *= displayScale;
             objectInfoArray[i].y0 *= displayScale;
             objectInfoArray[i].width *= displayScale;
             objectInfoArray[i].height *= displayScale;
 
+            // Offset the bounding box coordinates based on the difference between the in-game screen and display
             objectInfoArray[i].x0 += (Screen.width - screen.transform.localScale.x * displayScale) / 2;
         }
     }
@@ -622,7 +624,8 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         // Send reference to inputData to DLL
         numObjects = UploadTexture(inputTextureCPU);
         if (printDebugMessages) Debug.Log($"Detected {numObjects} objects");
-        UpdateObjectInfo();
+        // Scale bounding boxes
+        ScaleBoundingBoxes();
 
         // Release the input texture
         RenderTexture.ReleaseTemporary(inputTextureGPU);
