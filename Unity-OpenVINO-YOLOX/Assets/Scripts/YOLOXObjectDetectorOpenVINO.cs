@@ -723,13 +723,13 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
             Color color = colors[objectInfo.label];
             string name = bboxInfoList.items[objectInfo.label].label;
 
-            
 
+            int labelBoxheight = (int)(Screen.width * 1.5e-2);
             string labelText = $" {name}: {(objectInfo.prob * 100).ToString("0.##")}%";
             labelRect.x = objectInfo.x0;
-            labelRect.y = Screen.height - objectInfo.y0;
+            labelRect.y = Screen.height - objectInfo.y0 - labelBoxheight;
             labelRect.width = objectInfo.width;
-            labelRect.height = (int)(Screen.width * 1.75e-2); ;
+            labelRect.height = labelBoxheight;
 
             bboxStyle.normal.textColor = color.grayscale > 0.5 ? Color.black : Color.white;
             bboxStyle.normal.background = colorTextures[objectInfo.label];
