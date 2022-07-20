@@ -1,0 +1,23 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel FlipXAxis
+
+// The pixel data for the input image
+Texture2D<float4> InputImage;
+// The pixel data for the processed image
+RWTexture2D<float4> Result;
+
+// Flip the image around the x-axis
+[numthreads(8, 8, 1)]
+void FlipXAxis(uint3 id : SV_DispatchThreadID)
+{
+    // Stores the InputImage width
+    uint width;
+    // Stores the InputImage height
+    uint height;
+    // Get the dimensions of the InputImage
+    InputImage.GetDimensions(width, height);
+
+    // Update the y value for the pixel coordinates
+    int2 coords = int2(id.x, height - id.y);
+    Result[id.xy] = float4(InputImage[coords].x, InputImage[coords].y, InputImage[coords].z, 1.0f);
+}

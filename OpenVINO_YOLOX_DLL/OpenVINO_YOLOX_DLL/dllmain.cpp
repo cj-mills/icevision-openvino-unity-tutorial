@@ -1,0 +1,397 @@
+// dllmain.cpp : Defines the entry point for the DLL application.
+#include "pch.h"
+
+// Create a macro to quickly mark a function for export
+#define DLLExport __declspec (dllexport)
+
+// Wrap code to prevent name-mangling issues
+extern "C" {
+
+	// 
+	ov::Core core;
+	// 
+	std::shared_ptr<ov::Model> model;
+	// 
+	ov::CompiledModel compiled_model;
+
+	// List of available compute devices
+	std::vector<std::string> available_devices;
+	// 
+	ov::InferRequest infer_request;
+	// 
+	ov::Tensor input_tensor;
+	// 
+	float* input_data;
+
+	// model has only one output
+	ov::Tensor output_tensor;
+	// 
+	float* out_data;
+
+	// 
+	int img_w;
+	// 	
+	int img_h;
+	// 
+	int input_w;
+	// 
+	int input_h;
+	// 
+	int nPixels;
+	// The number of color channels 
+	int num_channels = 3;
+
+	// Stores information about a single object prediction
+	struct Object
+	{
+		float x0;
+		float y0;
+		float width;
+		float height;
+		int label;
+		float prob;
+	};
+
+	// Store grid offset and stride values to decode a section of the model output
+	struct GridAndStride
+	{
+		int grid0;
+		int grid1;
+		int stride;
+	};
+
+	// The scale value used to adjust the model output to the original unpadded image
+	float scaleX;
+	float scaleY;
+
+	// The minimum confidence score to consider an object proposal
+	float bbox_conf_thresh = 0.3;
+	// The maximum intersection over union value before an object proposal will be ignored
+	float nms_thresh = 0.45;
+
+	// The mean of the ImageNet dataset used to train the model
+	float mean[] = { 0.485, 0.456, 0.406 };
+	// The standard deviation of the ImageNet dataset used to train the model
+	float std_dev[] = { 0.229, 0.224, 0.225 };
+
+	// Stores the grid and stride values
+	std::vector<GridAndStride> grid_strides;
+	// Stores the object proposals with confidence scores above bbox_conf_thresh
+	std::vector<Object> proposals;
+	// Stores the indices for the object proposals selected using non-maximum suppression
+	std::vector<int> proposal_indices;
+
+	// The stride values used to generate the gride_strides vector
+	std::vector<int> strides = { 8, 16, 32 };
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <returns></returns>
+	DLLExport int GetDeviceCount() 
+	{
+
+		available_devices.clear();
+
+		for (std::string device : core.get_available_devices()) {
+			if (device.find("GNA") == std::string::npos) {
+				available_devices.push_back(device);
+			}
+		}
+
+		return available_devices.size();
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="index"></param>
+	/// <returns></returns>
+	DLLExport std::string* GetDeviceName(int index) {
+		return &available_devices[index];
+	}
+
+
+	/// <summary>
+	/// Generate grid and stride values
+	/// </summary>
+	/// <param name="height"></param>
+	/// <param name="width"></param>
+	void GenerateGridsAndStride(int height, int width)
+	{
+		// Iterate through each stride value
+		for (auto stride : strides)
+		{
+			// Calculate the grid dimensions
+			int grid_height = height / stride;
+			int grid_width = width / stride;
+
+			// Store each combination of grid coordinates
+			for (int g1 = 0; g1 < grid_height; g1++)
+			{
+				for (int g0 = 0; g0 < grid_width; g0++)
+				{
+					grid_strides.push_back(GridAndStride{ g0, g1, stride });
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="minConfidence"></param>
+	/// <returns></returns>
+	DLLExport void SetConfidenceThreshold(float minConfidence)
+	{
+		bbox_conf_thresh = minConfidence;
+	}
+
+
+	/// <summary>
+	/// Load a model from the specified file path
+	/// </summary>
+	/// <param name="modelPath"></param>
+	/// <param name="index"></param>
+	/// <param name="inputDims"></param>
+	/// <returns></returns>
+	DLLExport int LoadModel(char* modelPath, int index, int inputDims[2]) 
+	{
+
+		int return_val = 0;
+		core.set_property("GPU", ov::cache_dir("cache"));
+
+		// Try loading the specified model
+		try { model = core.read_model(modelPath); }
+		catch (...) { return 1; }
+
+		// The dimensions of the source input image
+		img_w = inputDims[0];
+		img_h = inputDims[1];
+		// Calculate new input dimensions based on the max stride value
+		input_w = (int)(strides.back() * std::roundf(img_w / strides.back()));
+		input_h = (int)(strides.back() * std::roundf(img_h / strides.back()));
+		nPixels = input_w * input_h;
+
+		// Calculate the value used to adjust the model output to the source image resolution
+		scaleX = input_w / (img_w * 1.0);
+		scaleY = input_h / (img_h * 1.0);
+
+		// Generate the grid and stride values based on input resolution
+		grid_strides.clear();
+		GenerateGridsAndStride(input_h, input_w);
+
+		// Try updating the model input dimensions
+		try { model->reshape({ 1, 3, input_h, input_w }); }
+		catch (...) { return_val = 2; }
+
+		auto compiled_model = core.compile_model(model, "MULTI",
+			ov::device::priorities(available_devices[index]),
+			ov::hint::performance_mode(ov::hint::PerformanceMode::LATENCY),
+			ov::hint::inference_precision(ov::element::f32));
+
+		infer_request = compiled_model.create_infer_request();
+
+		// Get input tensor by index
+		input_tensor = infer_request.get_input_tensor(0);
+		// 				
+		input_data = input_tensor.data<float>();
+		 
+		// Get output tensor
+		output_tensor = infer_request.get_output_tensor();
+		// 
+		out_data = output_tensor.data<float>();
+
+		inputDims[0] = input_w;
+		inputDims[1] = input_h;
+
+		// Return a value of 0 if the model loads successfully
+		return return_val;
+	}
+
+	/// <summary>
+	/// Create object proposals for all model predictions with high enough confidence scores
+	/// </summary>
+	/// <param name="feat_ptr"></param>
+	void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
+	{
+		// Obtain the number of classes the model was trained to detect
+		int num_classes = proposal_length - 5;
+
+		for (int anchor_idx = 0; anchor_idx < grid_strides.size(); anchor_idx++)
+		{
+			// Get the current grid and stride values
+			int grid0 = grid_strides[anchor_idx].grid0;
+			int grid1 = grid_strides[anchor_idx].grid1;
+			int stride = grid_strides[anchor_idx].stride;
+
+			// Get the starting index for the current proposal
+			int start_idx = anchor_idx * proposal_length;
+
+			// Get the coordinates for the center of the predicted bounding box
+			float x_center = (feat_ptr[start_idx + 0] + grid0) * stride;
+			float y_center = (feat_ptr[start_idx + 1] + grid1) * stride;
+
+			// Get the dimensions for the predicted bounding box
+			float w = exp(feat_ptr[start_idx + 2]) * stride;
+			float h = exp(feat_ptr[start_idx + 3]) * stride;
+
+			// Calculate the coordinates for the upper left corner of the bounding box
+			float x0 = x_center - w * 0.5f;
+			float y0 = y_center - h * 0.5f;
+
+			// Get the confidence score that an object is present
+			float box_objectness = feat_ptr[start_idx + 4];
+
+			// Initialize object struct with bounding box information
+			Object obj = { x0, y0, w, h, 0, 0 };
+
+			// Find the object class with the highest confidence score
+			for (int class_idx = 0; class_idx < num_classes; class_idx++)
+			{
+				// Get the confidence score for the current object class
+				float box_cls_score = feat_ptr[start_idx + 5 + class_idx];
+				// Calculate the final confidence score for the object proposal
+				float box_prob = box_objectness * box_cls_score;
+
+				// Check for the highest confidence score
+				if (box_prob > obj.prob)
+				{
+					obj.label = class_idx;
+					obj.prob = box_prob;
+				}
+			}
+
+			// Only add object proposals with high enough confidence scores
+			if (obj.prob > bbox_conf_thresh)
+				proposals.push_back(obj);
+		}
+	}
+
+	/// <summary>
+	/// Filter through a sorted list of object proposals using Non-maximum suppression
+	/// </summary>
+	void NmsSortedBboxes()
+	{
+		// Iterate through the object proposals
+		for (int i = 0; i < proposals.size(); i++)
+		{
+			Object& a = proposals[i];
+
+			// Create OpenCV rectangle for the Object bounding box
+			cv::Rect_<float> aRect = cv::Rect_<float>(a.x0, a.y0, a.width, a.height);
+			// Get the bounding box area
+			float aRect_area = aRect.area();
+
+			bool keep = true;
+
+			// Check if the current object proposal overlaps any selected objects too much
+			for (int j : proposal_indices)
+			{
+				Object& b = proposals[j];
+
+				// Create OpenCV rectangle for the Object bounding box
+				cv::Rect_<float> bRect = cv::Rect_<float>(b.x0, b.y0, b.width, b.height);
+
+				// Calculate the area where the two object bounding boxes overlap
+				float inter_area = (aRect & bRect).area();
+				// Calculate the union area of both bounding boxes
+				float union_area = aRect_area + bRect.area() - inter_area;
+				// Ignore object proposals that overlap selected objects too much
+				if (inter_area / union_area > nms_thresh)
+					keep = false;
+			}
+
+			// Keep object proposals that do not overlap selected objects too much
+			if (keep)
+				proposal_indices.push_back(i);
+		}
+	}
+
+
+	/// <summary>
+	/// Perform inference with the provided texture data
+	/// </summary>
+	/// <param name="inputData"></param>
+	/// <returns></returns>
+	DLLExport int PerformInference(uchar* inputData) 
+	{
+
+		// Store the pixel data for the source input image in an OpenCV Mat
+		cv::Mat texture = cv::Mat(img_h, img_w, CV_8UC4, inputData);
+
+		// Remove the alpha channel
+		cv::cvtColor(texture, texture, cv::COLOR_RGBA2RGB);
+
+		// Resize the input image
+		cv::resize(texture, texture, cv::Size(input_w, input_h));
+
+		// Iterate over each pixel in image
+		for (int p = 0; p < nPixels; p++)
+		{
+			// Iterate over each color channel for each pixel in image
+			for (int ch = 0; ch < num_channels; ++ch)
+			{
+				int source_idx = p * num_channels + ch;
+				int dest_idx = ch * nPixels + p;
+				input_data[dest_idx] = (texture.data[source_idx] / 255.0f - mean[ch]) / std_dev[ch];
+			}
+		}
+
+		// Perform inference
+		infer_request.infer();
+
+		// Remove the proposals for the previous model output
+		proposals.clear();
+		// Generate new proposals for the current model output
+		GenerateYoloxProposals(out_data, output_tensor.get_shape()[2]);
+
+		// Sort the generated proposals based on their confidence scores
+		auto compare_func = [](Object& a, Object& b) -> bool
+		{ return a.prob > b.prob; };
+		std::sort(proposals.begin(), proposals.end(), compare_func);
+
+		// Remove the picked proposals for the previous model outptut
+		proposal_indices.clear();
+		// Pick detected objects to keep using Non-maximum Suppression
+		NmsSortedBboxes();
+
+		return (int)proposal_indices.size();
+	}
+
+	/// <summary>
+	/// Fill the provided array with the detected objects
+	/// </summary>
+	/// <param name="objects"></param>
+	/// <returns></returns>
+	DLLExport void PopulateObjectsArray(Object* objects) 
+	{
+
+		for (int i = 0; i < proposal_indices.size(); i++)
+		{
+			Object obj = proposals[proposal_indices[i]];
+
+			// Adjust offset to source image resolution and clamp the bounding box
+			objects[i].x0 = std::min(obj.x0 / scaleX, (float)img_w);
+			objects[i].y0 = std::min(obj.y0 / scaleY, (float)img_h);
+			objects[i].width = std::min(obj.width / scaleX, (float)img_w);
+			objects[i].height = std::min(obj.height / scaleY, (float)img_h);
+
+			objects[i].label = obj.label;
+			objects[i].prob = obj.prob;
+		}
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <returns></returns>
+	DLLExport void FreeResources() 
+	{
+
+		available_devices.clear();
+		grid_strides.clear();
+		proposals.clear();
+		proposal_indices.clear();
+	}
+}
