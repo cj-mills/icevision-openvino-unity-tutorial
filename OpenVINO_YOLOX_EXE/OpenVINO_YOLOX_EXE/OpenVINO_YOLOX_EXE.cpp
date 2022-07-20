@@ -24,7 +24,7 @@ struct GridAndStride
 };
 
 // RGB color list
-float color_list[][3] = { {0.1583, 0.8625, 0.23597}, {0.4083,0.20284, 0.35956 }, { 0.0408, 0.21456, 0.666 }, { 0.60176, 0.72458, 0.03401 } };
+float color_list[][3] = { {0.1583, 0.8625, 0.23597}, {0.4083, 0.20284, 0.35956}, {0.0408, 0.21456, 0.666}, {0.60176, 0.72458, 0.03401} };
 // Fridge class labels
 std::string class_names[] = { "carton", "milk_bottle", "can", "water_bottle" };
 
@@ -215,7 +215,7 @@ void draw_objects(cv::Mat& input_img, std::vector<Object>& objects)
 {
 	// Make a copy of the input image
 	cv::Mat image = input_img.clone();
-	
+
 	// Iterate through selected proposals
 	for (int i : proposal_indices)
 	{
