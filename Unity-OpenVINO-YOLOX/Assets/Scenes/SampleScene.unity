@@ -1484,7 +1484,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0a0bd3172583c0240975381ee9d12f6f, type: 2}
+  - {fileID: 2100000, guid: 6bf416a89b13d2940b9baa6c6c5d050d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2539,11 +2539,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   screen: {fileID: 709389918}
   mirrorScreen: 0
-  targetDim: 256
+  targetDim: 384
   processingShader: {fileID: 7200000, guid: 745d67b6609760d428fc14223a9e1e72, type: 3}
   useAsyncGPUReadback: 1
-  bboxInfo: {fileID: 4900000, guid: a582050670e9e334795ca38a2683b832, type: 3}
-  minConfidence: 0.65
+  bboxInfo: {fileID: 4900000, guid: a4575de3ac2663245be200fbaabab8f8, type: 3}
+  minConfidence: 0.5
   printDebugMessages: 1
   useWebcam: 0
   webcamDims: {x: 1280, y: 720}

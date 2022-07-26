@@ -24,9 +24,9 @@ struct GridAndStride
 };
 
 // RGB color list
-float color_list[][3] = { {0.1583, 0.8625, 0.23597}, {0.4083, 0.20284, 0.35956}, {0.0408, 0.21456, 0.666}, {0.60176, 0.72458, 0.03401} };
+float color_list[][3] = { {0.0, 1.0, 0.0}, {1.0, 0.0, 1.0}, {0.0, 0.5, 1.0}, {1.0, 0.5, 0.0}, {0.5, 0.75, 0.5}, {0.31997, 0.01589, 0.68464}, {0.75145, 0.00045, 0.03249}, {0.39507, 0.42992, 0.01643}, {0.0, 1.0, 1.0}, {0.91345, 0.99803, 0.13153}, {0.98225, 0.48826, 0.75115}, {0.0, 1.0, 0.5}, {0.06076, 0.39736, 0.47774}, {0.51949, 0.32852, 0.9794}, {0.66326, 0.29173, 0.44682}, {0.5093, 0.97653, 0.92099}, {0.49011, 0.88493, 0.02851}, {0.00276, 0.65941, 0.1363}, {0.0, 0.0, 1.0} };
 // Fridge class labels
-std::string class_names[] = { "carton", "milk_bottle", "can", "water_bottle" };
+std::string class_names[] = { "call", "no_gesture", "dislike", "fist", "four", "like", "mute", "ok", "one", "palm", "peace", "peace_inverted", "rock", "stop", "stop_inverted", "three", "three2", "two_up", "two_up_inverted" };
 
 
 // The scale value used to adjust the model output to the original unpadded image
