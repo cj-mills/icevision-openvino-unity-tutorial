@@ -24,7 +24,7 @@ struct GridAndStride
 };
 
 // RGB color list
-float color_list[][3] = { {0.0, 1.0, 0.0}, {1.0, 0.0, 1.0}, {0.0, 0.5, 1.0}, {1.0, 0.5, 0.0}, {0.5, 0.75, 0.5}, {0.31997, 0.01589, 0.68464}, {0.75145, 0.00045, 0.03249}, {0.39507, 0.42992, 0.01643}, {0.0, 1.0, 1.0}, {0.91345, 0.99803, 0.13153}, {0.98225, 0.48826, 0.75115}, {0.0, 1.0, 0.5}, {0.06076, 0.39736, 0.47774}, {0.51949, 0.32852, 0.9794}, {0.66326, 0.29173, 0.44682}, {0.5093, 0.97653, 0.92099}, {0.49011, 0.88493, 0.02851}, {0.00276, 0.65941, 0.1363}, {0.0, 0.0, 1.0} };
+float color_list[][3] = { {0.0, 1.0, 0.0}, {1.0, 0.0, 1.0}, {0.0, 0.5, 1.0}, {1.0, 0.5, 0.0}, {0.5, 0.75, 0.5}, {0.22306, 0.03884, 0.63863}, {0.83834, 0.02618, 0.28495}, {0.14941, 0.49409, 0.07838}, {0.87966, 0.48671, 0.89008}, {0.0, 1.0, 1.0}, {0.91938, 0.99861, 0.05139}, {0.0, 1.0, 0.5}, {0.53346, 0.91229, 0.96735}, {0.51542, 0.33546, 0.43115}, {0.57386, 0.70814, 0.00274}, {0.51983, 0.19915, 0.95881}, {0.98043, 0.82465, 0.52956}, {0.01717, 0.50508, 0.53789}, {0.44103, 0.17112, 0.0093} };
 // Fridge class labels
 std::string class_names[] = { "call", "no_gesture", "dislike", "fist", "four", "like", "mute", "ok", "one", "palm", "peace", "peace_inverted", "rock", "stop", "stop_inverted", "three", "three2", "two_up", "two_up_inverted" };
 
@@ -211,10 +211,10 @@ void NmsSortedBboxes()
 /// </summary>
 /// <param name="input_img"></param>
 /// <param name="objects"></param>
-void draw_objects(cv::Mat& input_img, std::vector<Object>& objects)
+void draw_objects(cv::Mat& image, std::vector<Object>& objects)
 {
 	// Make a copy of the input image
-	cv::Mat image = input_img.clone();
+	//cv::Mat image = input_img.clone();
 
 	// Iterate through selected proposals
 	for (int i : proposal_indices)
@@ -236,22 +236,27 @@ void draw_objects(cv::Mat& input_img, std::vector<Object>& objects)
 		std::string text = std::format("{} {:.1f}%", label, confidence);
 		// Get text box size
 		int baseLine = 0;
-		cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine);
-		label_size.width = rect.width;
+		// Set label font size
+		float font_size = 0.75;
+		// Set label font thickness
+		int font_thickness = 2;
+		// Calculate the label size
+		cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, font_size, font_thickness, &baseLine);
 		// Clamp bounding box to image border
 		int x = std::min((int)rect.x, image.cols);
 		int y = std::min((int)rect.y, image.rows);
 		//  Define text box
-		cv::Rect text_box(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine));
+		cv::Rect text_box(cv::Point(x, y - label_size.height), cv::Size(label_size.width, label_size.height + baseLine));
 		// Draw text box
 		cv::rectangle(image, text_box, (color * 255), -1);
 		// Add text
-		cv::Scalar txt_color = cv::mean(color)[0] > 0.3 ? cv::Scalar(0, 0, 0) : cv::Scalar(255, 255, 255);
-		cv::putText(image, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4, txt_color, 1);
+		cv::Mat grayMat = cv::Mat(1, 1, CV_8UC3);
+		grayMat.setTo(color);
+		cv::cvtColor(grayMat, grayMat, cv::COLOR_BGR2GRAY);
+		cv::Scalar txt_color = grayMat.data[0] > 0.5 ? cv::Scalar(0, 0, 0) : cv::Scalar(255, 255, 255);
+		cv::putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, font_size, txt_color, font_thickness);
 	}
 
-	//// Convert input image back to BGR format
-	cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 	// Save annotated image
 	std::string out_name = "output.jpg";
 	cv::imwrite(out_name, image);
@@ -268,12 +273,13 @@ int main(int argc, const char* argv[])
 {
 	// Load an input image
 	cv::Mat image = cv::imread(argv[2]);
+	cv::Mat input_img = image.clone();
 	// Convert image from BGR to RGB format
-	cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
+	cv::cvtColor(input_img, input_img, cv::COLOR_BGR2RGB);
 
 	// The dimensions of the source input image
-	int img_w = image.cols;
-	int img_h = image.rows;
+	int img_w = input_img.cols;
+	int img_h = input_img.rows;
 	// Calculate new input dimensions based on the max stride value
 	int input_w = (int)(strides.back() * std::roundf(img_w / strides.back()));
 	int input_h = (int)(strides.back() * std::roundf(img_h / strides.back()));
@@ -281,7 +287,7 @@ int main(int argc, const char* argv[])
 	scaleX = input_w / (img_w * 1.0);
 	scaleY = input_h / (img_h * 1.0);
 	// Resize input image to new dimensions
-	cv::resize(image, image, cv::Size(input_w, input_h));
+	cv::resize(input_img, input_img, cv::Size(input_w, input_h));
 
 	// Generate the grid and stride values based on input resolution
 	GenerateGridsAndStride(input_h, input_w);
@@ -300,7 +306,7 @@ int main(int argc, const char* argv[])
 	// Read in a model file
 	std::shared_ptr<ov::Model> model = core.read_model(argv[1]);
 	// Update model input dimensions
-	model->reshape({ 1, 3, image.rows, image.cols });
+	model->reshape({ 1, 3, input_img.rows, input_img.cols });
 	// Print model input and output
 	printInputAndOutputsInfo(*model);
 	// Compile and load network to device
@@ -317,7 +323,7 @@ int main(int argc, const char* argv[])
 	float* input_data = input_tensor.data<float>();
 
 	// The number of color channels
-	int num_channels = image.channels();
+	int num_channels = input_img.channels();
 	// Get model input dimensions
 	int H = input_tensor.get_shape()[2];
 	int W = input_tensor.get_shape()[3];
@@ -334,7 +340,7 @@ int main(int argc, const char* argv[])
 		{
 			int source_idx = p * num_channels + ch;
 			int dest_idx = ch * nPixels + p;
-			input_data[dest_idx] = (image.data[source_idx] / 255.0f - mean[ch]) / std_dev[ch];
+			input_data[dest_idx] = (input_img.data[source_idx] / 255.0f);
 		}
 	}
 
@@ -370,7 +376,7 @@ int main(int argc, const char* argv[])
 	// Get the number of objects detected
 	printf("Detected %d objects\n", (int)proposal_indices.size());
 	// Resize input image back to source resolution
-	cv::resize(image, image, cv::Size(img_w, img_h));
-	// Annotate input image with model predictions
+	//cv::resize(input_img, input_img, cv::Size(img_w, img_h));
+	// Annotate source image with model predictions
 	draw_objects(image, proposals);
 }
