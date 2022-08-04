@@ -2538,13 +2538,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   screen: {fileID: 709389918}
-  mirrorScreen: 0
-  targetDim: 384
+  mirrorScreen: 1
+  targetDim: 224
   processingShader: {fileID: 7200000, guid: 745d67b6609760d428fc14223a9e1e72, type: 3}
   useAsyncGPUReadback: 1
-  bboxInfo: {fileID: 4900000, guid: a4575de3ac2663245be200fbaabab8f8, type: 3}
+  bboxInfo: {fileID: 4900000, guid: 1278cc3cbd43e9e40903a84d1c058e95, type: 3}
   minConfidence: 0.5
-  printDebugMessages: 1
+  printDebugMessages: 0
   useWebcam: 0
   webcamDims: {x: 1280, y: 720}
   webcamFPS: 60
