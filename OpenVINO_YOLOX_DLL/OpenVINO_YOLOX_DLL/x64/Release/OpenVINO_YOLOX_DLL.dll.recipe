@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>G:\Projects\GitHub\Unity-OpenVINO-YOLOX\OpenVINO_YOLOX_DLL\x64\Release\OpenVINO_YOLOX_DLL.dll</FullPath>
+      <FullPath>G:\Projects\GitHub\icevision-openvino-unity-tutorial\OpenVINO_YOLOX_DLL\x64\Release\OpenVINO_YOLOX_DLL.dll</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />
