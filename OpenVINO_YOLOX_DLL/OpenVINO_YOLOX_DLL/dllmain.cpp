@@ -7,36 +7,36 @@
 // Wrap code to prevent name-mangling issues
 extern "C" {
 
-	// 
+	// Inference engine instance
 	ov::Core core;
-	// 
+	// The user define model representation
 	std::shared_ptr<ov::Model> model;
-	// 
+	// A device-specific compiled model
 	ov::CompiledModel compiled_model;
 
 	// List of available compute devices
 	std::vector<std::string> available_devices;
-	// 
+	// An inference request for a compiled model
 	ov::InferRequest infer_request;
-	// 
+	// Stores the model input data
 	ov::Tensor input_tensor;
-	// 
+	// A pointer for accessing the input tensor data
 	float* input_data;
 
 	// model has only one output
 	ov::Tensor output_tensor;
-	// 
+	// A pointer for accessing the output tensor data
 	float* out_data;
 
-	// 
+	// The current source image width
 	int img_w;
-	// 	
+	// The current source image height
 	int img_h;
-	// 
+	// The current model input width
 	int input_w;
-	// 
+	// The current model input height
 	int input_h;
-	// 
+	// The total number pixels in the input image
 	int nPixels;
 	// The number of color channels 
 	int num_channels = 3;
@@ -85,7 +85,7 @@ extern "C" {
 	std::vector<int> strides = { 8, 16, 32 };
 
 	/// <summary>
-	/// 
+	/// Get the number of available compute devices
 	/// </summary>
 	/// <returns></returns>
 	DLLExport int GetDeviceCount() 
@@ -103,7 +103,7 @@ extern "C" {
 	}
 
 	/// <summary>
-	/// 
+	/// Get the name of the compute device name at the specified index
 	/// </summary>
 	/// <param name="index"></param>
 	/// <returns></returns>
@@ -138,7 +138,7 @@ extern "C" {
 	}
 
 	/// <summary>
-	/// 
+	/// Set minimum confidence score for keeping bounding box proposals
 	/// </summary>
 	/// <param name="minConfidence"></param>
 	/// <returns></returns>
@@ -334,7 +334,7 @@ extern "C" {
 			{
 				int source_idx = p * num_channels + ch;
 				int dest_idx = ch * nPixels + p;
-				input_data[dest_idx] = (texture.data[source_idx] / 255.0f - mean[ch]) / std_dev[ch];
+				input_data[dest_idx] = (texture.data[source_idx] / 255.0f);
 			}
 		}
 
@@ -356,6 +356,7 @@ extern "C" {
 		// Pick detected objects to keep using Non-maximum Suppression
 		NmsSortedBboxes();
 
+		// return the final number of proposals
 		return (int)proposal_indices.size();
 	}
 
@@ -383,12 +384,11 @@ extern "C" {
 	}
 
 	/// <summary>
-	/// 
+	/// Reset vectors
 	/// </summary>
 	/// <returns></returns>
 	DLLExport void FreeResources() 
 	{
-
 		available_devices.clear();
 		grid_strides.clear();
 		proposals.clear();
