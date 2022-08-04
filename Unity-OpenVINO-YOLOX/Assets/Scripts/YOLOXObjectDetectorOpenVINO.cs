@@ -530,25 +530,27 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
         {
             // The smallest dimension of the screen
             float minScreenDim = Mathf.Min(screen.transform.localScale.x, screen.transform.localScale.y);
+            // 
             int minInputDim = Mathf.Min(inputTextureCPU.width, inputTextureCPU.height);
+            // 
             float minImgScale = minScreenDim / minInputDim;
-
-            // Flip the bbox coordinates vertically
-            objectInfoArray[i].y0 = inputTextureCPU.height - objectInfoArray[i].y0;
-
-            // Scale bounding box to in-game screen resolution
-            objectInfoArray[i].x0 *= minImgScale;
-            objectInfoArray[i].y0 *= minImgScale;
-            objectInfoArray[i].width *= minImgScale;
-            objectInfoArray[i].height *= minImgScale;
-
+            // 
             float displayScale = Screen.height / screen.transform.localScale.y;
 
-            // Scale bounding boxes to display
-            objectInfoArray[i].x0 *= displayScale;
-            objectInfoArray[i].y0 *= displayScale;
-            objectInfoArray[i].width *= displayScale;
-            objectInfoArray[i].height *= displayScale;
+            // Scale bounding box to in-game screen resolution and flip the bbox coordinates vertically
+            float x0 = objectInfoArray[i].x0 * minImgScale;
+            float y0 = (inputTextureCPU.height - objectInfoArray[i].y0) * minImgScale;
+            float width = objectInfoArray[i].width * minImgScale;
+            float height = objectInfoArray[i].height * minImgScale;
+            
+            // 
+            if (mirrorScreen && useWebcam) x0 = screen.transform.localScale.x - x0 - width;
+
+            // Scale bounding boxes to display resolution
+            objectInfoArray[i].x0 = x0 * displayScale;
+            objectInfoArray[i].y0 = y0 * displayScale;
+            objectInfoArray[i].width = width * displayScale;
+            objectInfoArray[i].height = height * displayScale;
 
             // Offset the bounding box coordinates based on the difference between the in-game screen and display
             objectInfoArray[i].x0 += (Screen.width - screen.transform.localScale.x * displayScale) / 2;
@@ -740,22 +742,6 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
             // Get label for current class index
             string name = colormapList.items[objectInfo.label].label;
 
-            // Scale label text box based on display resolution
-            int labelBoxheight = (int)(Screen.width * 1e-2);
-            // Include class label and confidence score in label text
-            string labelText = $" {name}: {(objectInfo.prob * 100).ToString("0.##")}%";
-            // Set label text coordinates
-            labelRect.x = objectInfo.x0;
-            labelRect.y = Screen.height - objectInfo.y0 - labelBoxheight;
-            // Set label text dimensions
-            labelRect.width = objectInfo.width;
-            labelRect.height = labelBoxheight;
-            // Set label text and backgound color
-            labelStyle.normal.textColor = color.grayscale > 0.5 ? Color.black : Color.white;
-            labelStyle.normal.background = colorTextures[objectInfo.label];
-            // Render label
-            GUI.Label(labelRect, new GUIContent(labelText), labelStyle);
-
             // Set bounding box coordinates
             boxRect.x = objectInfo.x0;
             boxRect.y = Screen.height - objectInfo.y0;
@@ -767,14 +753,55 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
             int lineWidth = (int)(Screen.width * 1.75e-3);
             // Render bounding box
             GUI.DrawTexture(
-                position: boxRect, 
-                image: Texture2D.whiteTexture, 
+                position: boxRect,
+                image: Texture2D.whiteTexture,
                 scaleMode: ScaleMode.StretchToFill,
-                alphaBlend: true, 
-                imageAspect: 0, 
-                color:color, 
-                borderWidth: lineWidth, 
+                alphaBlend: true,
+                imageAspect: 0,
+                color: color,
+                borderWidth: lineWidth,
                 borderRadius: 0);
+
+            // Include class label and confidence score in label text
+            string labelText = $" {name}: {(objectInfo.prob * 100).ToString("0.##")}%";
+
+            // Initialize label GUI content
+            GUIContent labelContent = new GUIContent(labelText);
+
+            // Calculate the text size.
+            Vector2 textSize = labelStyle.CalcSize(labelContent);
+
+            // Set label text coordinates
+            labelRect.x = objectInfo.x0;
+            labelRect.y = Screen.height - objectInfo.y0 - textSize.y + lineWidth;
+
+            // Set label text dimensions
+            labelRect.width = Mathf.Max(textSize.x, objectInfo.width);
+            labelRect.height = textSize.y;
+            // Set label text and backgound color
+            labelStyle.normal.textColor = color.grayscale > 0.5 ? Color.black : Color.white;
+            labelStyle.normal.background = colorTextures[objectInfo.label];
+            // Render label
+            GUI.Label(labelRect, labelContent, labelStyle);
+
+            Rect objectDot = new Rect();
+            objectDot.height = lineWidth * 5;
+            objectDot.width = lineWidth * 5;
+            float radius = objectDot.width / 2;
+            objectDot.x = (boxRect.x + boxRect.width / 2) - radius;
+            objectDot.y = (boxRect.y + boxRect.height / 2) - radius;
+            
+
+            GUI.DrawTexture(
+                position: objectDot,
+                image: Texture2D.whiteTexture,
+                scaleMode: ScaleMode.StretchToFill,
+                alphaBlend: true,
+                imageAspect: 0,
+                color: color,
+                borderWidth: radius,
+                borderRadius: radius);
+
         }
     }
 
