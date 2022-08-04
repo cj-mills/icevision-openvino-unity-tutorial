@@ -10,9 +10,7 @@
 // add headers that you want to pre-compile here
 //#include "framework.h"
 
-// clang-format off
 #include "openvino/openvino.hpp"
 #include <opencv2/opencv.hpp>
-// clang-format on
 
 #endif //PCH_H
