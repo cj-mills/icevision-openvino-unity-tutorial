@@ -141,7 +141,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>G:\Projects\C++_Projects\Dependencies\openvino_2022.1.0.643\runtime\include;G:\Projects\C++_Projects\Dependencies\openvino_2022.1.0.643\opencv\include;G:\Projects\C++_Projects\Dependencies\openvino_2022.1.0.643\runtime\3rdparty\tbb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>G:\Projects\C++_Projects\Dependencies\openvino_2022.1.0.643\runtime\include\ie;G:\Projects\C++_Projects\Dependencies\openvino_2022.1.0.643\runtime\include;G:\Projects\C++_Projects\Dependencies\openvino_2022.1.0.643\opencv\include;G:\Projects\C++_Projects\Dependencies\openvino_2022.1.0.643\runtime\3rdparty\tbb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
