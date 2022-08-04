@@ -1,0 +1,13 @@
+conda create --name icevision python==3.8
+conda activate icevision
+pip install torch==1.10.0+cu111 torchvision==0.11.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+pip install mmcv-full==1.3.17 -f https://download.openmmlab.com/mmcv/dist/cu111/torch1.10.0/index.html
+pip install mmdet==2.17.0
+pip install icevision==0.11.0
+pip install icedata==0.5.1
+pip install setuptools==59.5.0
+pip install openvino-dev
+pip install distinctipy
+pip install jupyter
+pip install onnxruntime
+pip install onnx-simplifier
