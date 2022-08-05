@@ -37,7 +37,7 @@ extern "C" {
 	// The current model input height
 	int input_h;
 	// The total number pixels in the input image
-	int nPixels;
+	int n_pixels;
 	// The number of color channels 
 	int num_channels = 3;
 
@@ -61,8 +61,8 @@ extern "C" {
 	};
 
 	// The scale value used to adjust the model output to the original unpadded image
-	float scaleX;
-	float scaleY;
+	float scale_x;
+	float scale_y;
 
 	// The minimum confidence score to consider an object proposal
 	float bbox_conf_thresh = 0.3;
@@ -87,19 +87,20 @@ extern "C" {
 	/// <summary>
 	/// Get the number of available compute devices
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>The number of available devices</returns>
 	DLLExport int GetDeviceCount() 
 	{
-
+		// Reset list of available compute devices
 		available_devices.clear();
 
+		// Populate list of available compute devices
 		for (std::string device : core.get_available_devices()) {
 			// Skip GNA device
 			if (device.find("GNA") == std::string::npos) {
 				available_devices.push_back(device);
 			}
 		}
-
+		// Return the number of available compute devices
 		return available_devices.size();
 	}
 
@@ -107,7 +108,7 @@ extern "C" {
 	/// Get the name of the compute device name at the specified index
 	/// </summary>
 	/// <param name="index"></param>
-	/// <returns></returns>
+	/// <returns>The name of the device at the specified index</returns>
 	DLLExport std::string* GetDeviceName(int index) {
 		return &available_devices[index];
 	}
@@ -116,8 +117,8 @@ extern "C" {
 	/// <summary>
 	/// Generate grid and stride values
 	/// </summary>
-	/// <param name="height"></param>
-	/// <param name="width"></param>
+	/// <param name="height">The model input height</param>
+	/// <param name="width">The model input width</param>
 	void GenerateGridsAndStride(int height, int width)
 	{
 		// Iterate through each stride value
@@ -141,22 +142,21 @@ extern "C" {
 	/// <summary>
 	/// Set minimum confidence score for keeping bounding box proposals
 	/// </summary>
-	/// <param name="minConfidence"></param>
-	/// <returns></returns>
-	DLLExport void SetConfidenceThreshold(float minConfidence)
+	/// <param name="min_confidence">The minimum confidence score for keeping bounding box proposals</param>
+	DLLExport void SetConfidenceThreshold(float min_confidence)
 	{
-		bbox_conf_thresh = minConfidence;
+		bbox_conf_thresh = min_confidence;
 	}
 
 
 	/// <summary>
 	/// Load a model from the specified file path
 	/// </summary>
-	/// <param name="modelPath"></param>
-	/// <param name="index"></param>
-	/// <param name="inputDims"></param>
-	/// <returns></returns>
-	DLLExport int LoadModel(char* modelPath, int index, int inputDims[2]) 
+	/// <param name="model_path">The full model path to the OpenVINO IR model</param>
+	/// <param name="index">The index for the available_devices vector</param>
+	/// <param name="image_dims">The source image dimensions</param>
+	/// <returns>A status value indicating success or failure to load and reshape the model</returns>
+	DLLExport int LoadModel(char* model_path, int index, int image_dims[2]) 
 	{
 
 		int return_val = 0;
@@ -164,20 +164,20 @@ extern "C" {
 		core.set_property("GPU", ov::cache_dir("cache"));
 
 		// Try loading the specified model
-		try { model = core.read_model(modelPath); }
+		try { model = core.read_model(model_path); }
 		catch (...) { return 1; }
 
 		// The dimensions of the source input image
-		img_w = inputDims[0];
-		img_h = inputDims[1];
+		img_w = image_dims[0];
+		img_h = image_dims[1];
 		// Calculate new input dimensions based on the max stride value
 		input_w = (int)(strides.back() * std::roundf(img_w / strides.back()));
 		input_h = (int)(strides.back() * std::roundf(img_h / strides.back()));
-		nPixels = input_w * input_h;
+		n_pixels = input_w * input_h;
 
 		// Calculate the value used to adjust the model output to the source image resolution
-		scaleX = input_w / (img_w * 1.0);
-		scaleY = input_h / (img_h * 1.0);
+		scale_x = input_w / (img_w * 1.0);
+		scale_y = input_h / (img_h * 1.0);
 
 		// Generate the grid and stride values based on input resolution
 		grid_strides.clear();
@@ -207,8 +207,8 @@ extern "C" {
 		out_data = output_tensor.data<float>();
 
 		// Replace the initial input dims with the updated values
-		inputDims[0] = input_w;
-		inputDims[1] = input_h;
+		image_dims[0] = input_w;
+		image_dims[1] = input_h;
 
 		// Return a value of 0 if the model loads successfully
 		return return_val;
@@ -217,7 +217,7 @@ extern "C" {
 	/// <summary>
 	/// Create object proposals for all model predictions with high enough confidence scores
 	/// </summary>
-	/// <param name="feat_ptr"></param>
+	/// <param name="feat_ptr">A pointer to the output tensor data</param>
 	void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
 	{
 		// Obtain the number of classes the model was trained to detect
@@ -284,10 +284,8 @@ extern "C" {
 			Object& a = proposals[i];
 
 			// Create OpenCV rectangle for the Object bounding box
-			cv::Rect_<float> aRect = cv::Rect_<float>(a.x0, a.y0, a.width, a.height);
-			// Get the bounding box area
-			float aRect_area = aRect.area();
-
+			cv::Rect_<float> rect_a = cv::Rect_<float>(a.x0, a.y0, a.width, a.height);
+			
 			bool keep = true;
 
 			// Check if the current object proposal overlaps any selected objects too much
@@ -296,12 +294,12 @@ extern "C" {
 				Object& b = proposals[j];
 
 				// Create OpenCV rectangle for the Object bounding box
-				cv::Rect_<float> bRect = cv::Rect_<float>(b.x0, b.y0, b.width, b.height);
+				cv::Rect_<float> rect_b = cv::Rect_<float>(b.x0, b.y0, b.width, b.height);
 
 				// Calculate the area where the two object bounding boxes overlap
-				float inter_area = (aRect & bRect).area();
+				float inter_area = (rect_a & rect_b).area();
 				// Calculate the union area of both bounding boxes
-				float union_area = aRect_area + bRect.area() - inter_area;
+				float union_area = rect_a.area() + rect_b.area() - inter_area;
 				// Ignore object proposals that overlap selected objects too much
 				if (inter_area / union_area > nms_thresh)
 					keep = false;
@@ -317,29 +315,29 @@ extern "C" {
 	/// <summary>
 	/// Perform inference with the provided texture data
 	/// </summary>
-	/// <param name="inputData"></param>
-	/// <returns></returns>
-	DLLExport int PerformInference(uchar* inputData) 
+	/// <param name="image_data">The source image data from Unity</param>
+	/// <returns>The final number of detected objects</returns>
+	DLLExport int PerformInference(uchar* image_data) 
 	{
 
 		// Store the pixel data for the source input image in an OpenCV Mat
-		cv::Mat texture = cv::Mat(img_h, img_w, CV_8UC4, inputData);
+		cv::Mat input_image = cv::Mat(img_h, img_w, CV_8UC4, image_data);
 
 		// Remove the alpha channel
-		cv::cvtColor(texture, texture, cv::COLOR_RGBA2RGB);
+		cv::cvtColor(input_image, input_image, cv::COLOR_RGBA2RGB);
 
 		// Resize the input image
-		cv::resize(texture, texture, cv::Size(input_w, input_h));
+		cv::resize(input_image, input_image, cv::Size(input_w, input_h));
 
 		// Iterate over each pixel in image
-		for (int p = 0; p < nPixels; p++)
+		for (int p = 0; p < n_pixels; p++)
 		{
 			// Iterate over each color channel for each pixel in image
 			for (int ch = 0; ch < num_channels; ++ch)
 			{
 				int source_idx = p * num_channels + ch;
-				int dest_idx = ch * nPixels + p;
-				input_data[dest_idx] = (texture.data[source_idx] / 255.0f);
+				int dest_idx = ch * n_pixels + p;
+				input_data[dest_idx] = (input_image.data[source_idx] / 255.0f);
 			}
 		}
 
@@ -361,15 +359,14 @@ extern "C" {
 		// Pick detected objects to keep using Non-maximum Suppression
 		NmsSortedBboxes();
 
-		// return the final number of proposals
+		// return the final number of detected objects
 		return (int)proposal_indices.size();
 	}
 
 	/// <summary>
 	/// Fill the provided array with the detected objects
 	/// </summary>
-	/// <param name="objects"></param>
-	/// <returns></returns>
+	/// <param name="objects">A pointer to a list of objects from Unity</param>
 	DLLExport void PopulateObjectsArray(Object* objects) 
 	{
 
@@ -378,10 +375,10 @@ extern "C" {
 			Object obj = proposals[proposal_indices[i]];
 
 			// Adjust offset to source image resolution and clamp the bounding box
-			objects[i].x0 = std::min(obj.x0 / scaleX, (float)img_w);
-			objects[i].y0 = std::min(obj.y0 / scaleY, (float)img_h);
-			objects[i].width = std::min(obj.width / scaleX, (float)img_w);
-			objects[i].height = std::min(obj.height / scaleY, (float)img_h);
+			objects[i].x0 = std::min(obj.x0 / scale_x, (float)img_w);
+			objects[i].y0 = std::min(obj.y0 / scale_y, (float)img_h);
+			objects[i].width = std::min(obj.width / scale_x, (float)img_w);
+			objects[i].height = std::min(obj.height / scale_y, (float)img_h);
 
 			objects[i].label = obj.label;
 			objects[i].prob = obj.prob;
@@ -391,7 +388,6 @@ extern "C" {
 	/// <summary>
 	/// Reset vectors
 	/// </summary>
-	/// <returns></returns>
 	DLLExport void FreeResources() 
 	{
 		available_devices.clear();
