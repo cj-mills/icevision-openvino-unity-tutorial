@@ -661,6 +661,17 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
 
 
     /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="slider"></param>
+    public void UpdateConfidenceThreshold(Slider slider)
+    {
+        minConfidence = slider.value;
+        SetConfidenceThreshold(minConfidence);
+    }
+
+
+    /// <summary>
     /// Update the selected OpenVINO model
     /// </summary>
     public void UpdateOpenVINOModel()
