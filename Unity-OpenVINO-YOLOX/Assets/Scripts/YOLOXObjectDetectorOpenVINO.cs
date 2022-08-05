@@ -704,34 +704,6 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
     // OnGUI is called for rendering and handling GUI events.
     public void OnGUI()
     {
-        // Define styling information for GUI elements
-        GUIStyle style = new GUIStyle
-        {
-            fontSize = (int)(Screen.width * (1f / (100f - fontScale)))
-        };
-        style.normal.textColor = textColor;
-
-        // Define screen spaces for GUI elements
-        Rect slot1 = new Rect(10, 10, 500, 500);
-        Rect slot2 = new Rect(10, style.fontSize * 1.5f, 500, 500);
-
-        string content = $"Objects Detected: {numObjects}";
-        if (displayProposalCount) GUI.Label(slot1, new GUIContent(content), style);
-
-        // Update framerate value
-        if (Time.unscaledTime > fpsTimer)
-        {
-            fps = (int)(1f / Time.unscaledDeltaTime);
-            fpsTimer = Time.unscaledTime + fpsRefreshRate;
-        }
-
-        // Adjust screen position when not showing predicted class
-        Rect fpsRect = displayProposalCount ? slot2 : slot1;
-        if (displayFPS) GUI.Label(fpsRect, new GUIContent($"FPS: {fps}"), style);
-
-        // Check whether to render bounding boxes
-        if (!displayBoundingBoxes || numObjects < 1) return;
-
         // Initialize a rectangle for label text
         Rect labelRect = new Rect();
         // Initialize a rectangle for bounding boxes
@@ -745,6 +717,8 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
 
         foreach (Object objectInfo in objectInfoArray)
         {
+            if (!displayBoundingBoxes) break;
+
             // Skip object if label index is out of bounds
             if (objectInfo.label > colors.Length - 1) continue;
 
@@ -814,6 +788,31 @@ public class YOLOXObjectDetectorOpenVINO : MonoBehaviour
                 borderRadius: radius);
 
         }
+
+        // Define styling information for GUI elements
+        GUIStyle style = new GUIStyle
+        {
+            fontSize = (int)(Screen.width * (1f / (100f - fontScale)))
+        };
+        style.normal.textColor = textColor;
+
+        // Define screen spaces for GUI elements
+        Rect slot1 = new Rect(10, 10, 500, 500);
+        Rect slot2 = new Rect(10, style.fontSize * 1.5f, 500, 500);
+
+        string content = $"Objects Detected: {numObjects}";
+        if (displayProposalCount) GUI.Label(slot1, new GUIContent(content), style);
+
+        // Update framerate value
+        if (Time.unscaledTime > fpsTimer)
+        {
+            fps = (int)(1f / Time.unscaledDeltaTime);
+            fpsTimer = Time.unscaledTime + fpsRefreshRate;
+        }
+
+        // Adjust screen position when not showing predicted class
+        Rect fpsRect = displayProposalCount ? slot2 : slot1;
+        if (displayFPS) GUI.Label(fpsRect, new GUIContent($"FPS: {fps}"), style);
     }
 
     private void OnDisable()
