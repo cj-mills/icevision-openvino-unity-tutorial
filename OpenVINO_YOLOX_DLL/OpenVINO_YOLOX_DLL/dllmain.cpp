@@ -94,6 +94,7 @@ extern "C" {
 		available_devices.clear();
 
 		for (std::string device : core.get_available_devices()) {
+			// Skip GNA device
 			if (device.find("GNA") == std::string::npos) {
 				available_devices.push_back(device);
 			}
@@ -159,6 +160,7 @@ extern "C" {
 	{
 
 		int return_val = 0;
+		// Set the cache directory for compiled GPU models
 		core.set_property("GPU", ov::cache_dir("cache"));
 
 		// Try loading the specified model
@@ -185,23 +187,26 @@ extern "C" {
 		try { model->reshape({ 1, 3, input_h, input_w }); }
 		catch (...) { return_val = 2; }
 
+		// Create a compiled model for the taret compute device
 		auto compiled_model = core.compile_model(model, "MULTI",
 			ov::device::priorities(available_devices[index]),
 			ov::hint::performance_mode(ov::hint::PerformanceMode::LATENCY),
 			ov::hint::inference_precision(ov::element::f32));
 
+		// Create an inference request
 		infer_request = compiled_model.create_infer_request();
 
 		// Get input tensor by index
 		input_tensor = infer_request.get_input_tensor(0);
-		// 				
+		// Get a pointer to the input tensor data
 		input_data = input_tensor.data<float>();
 		 
 		// Get output tensor
 		output_tensor = infer_request.get_output_tensor();
-		// 
+		// Get a pointer to the output tensor data
 		out_data = output_tensor.data<float>();
 
+		// Replace the initial input dims with the updated values
 		inputDims[0] = input_w;
 		inputDims[1] = input_h;
 
