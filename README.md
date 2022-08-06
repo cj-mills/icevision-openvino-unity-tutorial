@@ -30,10 +30,7 @@ https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-9
 * [HaGRID Sample 120k 384p](https://www.kaggle.com/datasets/innominate817/hagrid-sample-120k-384p)
 
 
-
-## Reference Images
-
-<details><summary>images</summary><br/>
+<details><summary><h2>Reference Images</h2></summary><br/>
 
 | Class    | Image                                              |
 | --------- | ------------------------------------------------------------ |
