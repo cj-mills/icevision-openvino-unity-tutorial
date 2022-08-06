@@ -33,7 +33,7 @@ https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-9
 
 ## Reference Images
 
-<details><summary></summary><br/>
+<details><summary>images</summary><br/>
 
 | Class    | Image                                              |
 | --------- | ------------------------------------------------------------ |
