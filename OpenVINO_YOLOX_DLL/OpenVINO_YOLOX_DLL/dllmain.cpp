@@ -315,7 +315,6 @@ extern "C" {
 		}
 	}
 
-
 	/// <summary>
 	/// Perform inference with the provided texture data
 	/// </summary>
@@ -336,13 +335,9 @@ extern "C" {
 		// Iterate over each pixel in image
 		for (int p = 0; p < n_pixels; p++)
 		{
-			// Iterate over each color channel for each pixel in image
-			for (int ch = 0; ch < num_channels; ++ch)
-			{
-				int source_idx = p * num_channels + ch;
-				int dest_idx = ch * n_pixels + p;
-				input_data[dest_idx] = (input_image.data[source_idx] / 255.0f);
-			}
+			input_data[0 * n_pixels + p] = (input_image.data[p * num_channels + 0] / 255.0f);
+			input_data[1 * n_pixels + p] = (input_image.data[p * num_channels + 1] / 255.0f);
+			input_data[2 * n_pixels + p] = (input_image.data[p * num_channels + 2] / 255.0f);
 		}
 
 		// Perform inference
