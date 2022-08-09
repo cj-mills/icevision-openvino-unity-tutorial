@@ -60,7 +60,7 @@ extern "C" {
 		int stride;
 	};
 
-	// The scale value used to adjust the model output to the original unpadded image
+	// The scale values used to adjust the model output to the source image resolution
 	float scale_x;
 	float scale_y;
 
@@ -69,12 +69,7 @@ extern "C" {
 	// The maximum intersection over union value before an object proposal will be ignored
 	float nms_thresh = 0.45;
 
-	// The mean of the ImageNet dataset used to train the model
-	float mean[] = { 0.485, 0.456, 0.406 };
-	// The standard deviation of the ImageNet dataset used to train the model
-	float std_dev[] = { 0.229, 0.224, 0.225 };
-
-	// Stores the grid and stride values
+	// Stores the grid and stride values to navigate the raw model output
 	std::vector<GridAndStride> grid_strides;
 	// Stores the object proposals with confidence scores above bbox_conf_thresh
 	std::vector<Object> proposals;
@@ -115,7 +110,7 @@ extern "C" {
 
 
 	/// <summary>
-	/// Generate grid and stride values
+	/// Generate offset values to navigate the raw model output
 	/// </summary>
 	/// <param name="height">The model input height</param>
 	/// <param name="width">The model input width</param>
@@ -215,7 +210,7 @@ extern "C" {
 	}
 
 	/// <summary>
-	/// Create object proposals for all model predictions with high enough confidence scores
+	/// Generate object detection proposals from the raw model output
 	/// </summary>
 	/// <param name="feat_ptr">A pointer to the output tensor data</param>
 	void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
