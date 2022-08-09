@@ -39,7 +39,7 @@ extern "C" {
 	// The total number pixels in the input image
 	int n_pixels;
 	// The number of color channels 
-	int num_channels = 3;
+	int n_channels = 3;
 
 	// Stores information about a single object prediction
 	struct Object
@@ -335,9 +335,9 @@ extern "C" {
 		// Iterate over each pixel in image
 		for (int p = 0; p < n_pixels; p++)
 		{
-			input_data[0 * n_pixels + p] = (input_image.data[p * num_channels + 0] / 255.0f);
-			input_data[1 * n_pixels + p] = (input_image.data[p * num_channels + 1] / 255.0f);
-			input_data[2 * n_pixels + p] = (input_image.data[p * num_channels + 2] / 255.0f);
+			input_data[0*n_pixels + p] = input_image.data[p*n_channels + 0] / 255.0f;
+			input_data[1*n_pixels + p] = input_image.data[p*n_channels + 1] / 255.0f;
+			input_data[2*n_pixels + p] = input_image.data[p*n_channels + 2] / 255.0f;
 		}
 
 		// Perform inference
