@@ -212,9 +212,12 @@ extern "C" {
 	/// <summary>
 	/// Generate object detection proposals from the raw model output
 	/// </summary>
-	/// <param name="feat_ptr">A pointer to the output tensor data</param>
-	void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
+	/// <param name="out_ptr">A pointer to the output tensor data</param>
+	void GenerateYoloxProposals(float* out_ptr, int proposal_length)
 	{
+		// Remove the proposals for the previous model output
+		proposals.clear();
+
 		// Obtain the number of classes the model was trained to detect
 		int num_classes = proposal_length - 5;
 
@@ -229,19 +232,19 @@ extern "C" {
 			int start_idx = anchor_idx * proposal_length;
 
 			// Get the coordinates for the center of the predicted bounding box
-			float x_center = (feat_ptr[start_idx + 0] + grid0) * stride;
-			float y_center = (feat_ptr[start_idx + 1] + grid1) * stride;
+			float x_center = (out_ptr[start_idx + 0] + grid0) * stride;
+			float y_center = (out_ptr[start_idx + 1] + grid1) * stride;
 
 			// Get the dimensions for the predicted bounding box
-			float w = exp(feat_ptr[start_idx + 2]) * stride;
-			float h = exp(feat_ptr[start_idx + 3]) * stride;
+			float w = exp(out_ptr[start_idx + 2]) * stride;
+			float h = exp(out_ptr[start_idx + 3]) * stride;
 
 			// Calculate the coordinates for the upper left corner of the bounding box
 			float x0 = x_center - w * 0.5f;
 			float y0 = y_center - h * 0.5f;
 
 			// Get the confidence score that an object is present
-			float box_objectness = feat_ptr[start_idx + 4];
+			float box_objectness = out_ptr[start_idx + 4];
 
 			// Initialize object struct with bounding box information
 			Object obj = { x0, y0, w, h, 0, 0 };
@@ -250,7 +253,7 @@ extern "C" {
 			for (int class_idx = 0; class_idx < num_classes; class_idx++)
 			{
 				// Get the confidence score for the current object class
-				float box_cls_score = feat_ptr[start_idx + 5 + class_idx];
+				float box_cls_score = out_ptr[start_idx + 5 + class_idx];
 				// Calculate the final confidence score for the object proposal
 				float box_prob = box_objectness * box_cls_score;
 
@@ -263,9 +266,13 @@ extern "C" {
 			}
 
 			// Only add object proposals with high enough confidence scores
-			if (obj.prob > bbox_conf_thresh)
-				proposals.push_back(obj);
+			if (obj.prob > bbox_conf_thresh) proposals.push_back(obj);
 		}
+
+		// Sort the proposals based on the confidence score in descending order
+		auto compare_func = [](Object& a, Object& b) -> bool
+		{ return a.prob > b.prob; };
+		std::sort(proposals.begin(), proposals.end(), compare_func);
 	}
 
 	/// <summary>
@@ -273,6 +280,9 @@ extern "C" {
 	/// </summary>
 	void NmsSortedBboxes()
 	{
+		// Remove the picked proposals for the previous model outptut
+		proposal_indices.clear();
+
 		// Iterate through the object proposals
 		for (int i = 0; i < proposals.size(); i++)
 		{
@@ -301,8 +311,7 @@ extern "C" {
 			}
 
 			// Keep object proposals that do not overlap selected objects too much
-			if (keep)
-				proposal_indices.push_back(i);
+			if (keep) proposal_indices.push_back(i);
 		}
 	}
 
@@ -339,18 +348,9 @@ extern "C" {
 		// Perform inference
 		infer_request.infer();
 
-		// Remove the proposals for the previous model output
-		proposals.clear();
 		// Generate new proposals for the current model output
 		GenerateYoloxProposals(out_data, output_tensor.get_shape()[2]);
 
-		// Sort the generated proposals based on their confidence scores
-		auto compare_func = [](Object& a, Object& b) -> bool
-		{ return a.prob > b.prob; };
-		std::sort(proposals.begin(), proposals.end(), compare_func);
-
-		// Remove the picked proposals for the previous model outptut
-		proposal_indices.clear();
 		// Pick detected objects to keep using Non-maximum Suppression
 		NmsSortedBboxes();
 
