@@ -54,3 +54,5 @@ https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-9
 ## Tutorial Links
 
 [Part 1](https://christianjmills.com/IceVision-to-OpenVINO-to-Unity-Tutorial-1/): covers training and exporting the model
+
+[Part 2](https://christianjmills.com/IceVision-to-OpenVINO-to-Unity-Tutorial-2/): covers creating a dynamic link library (DLL) file in Visual Studio to perform inference with OpenVINO
