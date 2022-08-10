@@ -29,19 +29,14 @@ float color_list[][3] = { {0.0, 1.0, 0.0}, {1.0, 0.0, 1.0}, {0.0, 0.5, 1.0}, {1.
 std::string class_names[] = { "call", "no_gesture", "dislike", "fist", "four", "like", "mute", "ok", "one", "palm", "peace", "peace_inverted", "rock", "stop", "stop_inverted", "three", "three2", "two_up", "two_up_inverted" };
 
 
-// The scale value used to adjust the model output to the original unpadded image
-float scaleX;
-float scaleY;
+// The scale values used to adjust the model output to the source image resolution
+float scale_x;
+float scale_y;
 
 // The minimum confidence score to consider an object proposal
 float bbox_conf_thresh = 0.3;
 // The maximum intersection over union value before an object proposal will be ignored
 float nms_thresh = 0.45;
-
-// The mean of the ImageNet dataset used to train the model
-float mean[] = { 0.485, 0.456, 0.406 };
-// The standard deviation of the ImageNet dataset used to train the model
-float std_dev[] = { 0.229, 0.224, 0.225 };
 
 // List of available compute devices
 std::vector<std::string> available_devices;
@@ -83,12 +78,15 @@ void printInputAndOutputsInfo(ov::Model& network)
 }
 
 /// <summary>
-/// Generate grid and stride values
+/// Generate offset values to navigate the raw model output
 /// </summary>
-/// <param name="height"></param>
-/// <param name="width"></param>
+/// <param name="height">The model input height</param>
+/// <param name="width">The model input width</param>
 void GenerateGridsAndStride(int height, int width)
 {
+	// Remove the values for the previous input resolution
+	grid_strides.clear();
+
 	// Iterate through each stride value
 	for (auto stride : strides)
 	{
@@ -108,11 +106,14 @@ void GenerateGridsAndStride(int height, int width)
 }
 
 /// <summary>
-/// Create object proposals for all model predictions with high enough confidence scores
+/// Generate object detection proposals from the raw model output
 /// </summary>
-/// <param name="feat_ptr"></param>
-void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
+/// <param name="out_ptr">A pointer to the output tensor data</param>
+void GenerateYoloxProposals(float* out_ptr, int proposal_length)
 {
+	// Remove the proposals for the previous model output
+	proposals.clear();
+
 	// Obtain the number of classes the model was trained to detect
 	int num_classes = proposal_length - 5;
 
@@ -127,19 +128,19 @@ void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
 		int start_idx = anchor_idx * proposal_length;
 
 		// Get the coordinates for the center of the predicted bounding box
-		float x_center = (feat_ptr[start_idx + 0] + grid0) * stride;
-		float y_center = (feat_ptr[start_idx + 1] + grid1) * stride;
+		float x_center = (out_ptr[start_idx + 0] + grid0) * stride;
+		float y_center = (out_ptr[start_idx + 1] + grid1) * stride;
 
 		// Get the dimensions for the predicted bounding box
-		float w = exp(feat_ptr[start_idx + 2]) * stride;
-		float h = exp(feat_ptr[start_idx + 3]) * stride;
+		float w = exp(out_ptr[start_idx + 2]) * stride;
+		float h = exp(out_ptr[start_idx + 3]) * stride;
 
 		// Calculate the coordinates for the upper left corner of the bounding box
 		float x0 = x_center - w * 0.5f;
 		float y0 = y_center - h * 0.5f;
 
 		// Get the confidence score that an object is present
-		float box_objectness = feat_ptr[start_idx + 4];
+		float box_objectness = out_ptr[start_idx + 4];
 
 		// Initialize object struct with bounding box information
 		Object obj = { x0, y0, w, h, 0, 0 };
@@ -148,7 +149,7 @@ void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
 		for (int class_idx = 0; class_idx < num_classes; class_idx++)
 		{
 			// Get the confidence score for the current object class
-			float box_cls_score = feat_ptr[start_idx + 5 + class_idx];
+			float box_cls_score = out_ptr[start_idx + 5 + class_idx];
 			// Calculate the final confidence score for the object proposal
 			float box_prob = box_objectness * box_cls_score;
 
@@ -161,9 +162,12 @@ void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
 		}
 
 		// Only add object proposals with high enough confidence scores
-		if (obj.prob > bbox_conf_thresh)
-			proposals.push_back(obj);
+		if (obj.prob > bbox_conf_thresh) proposals.push_back(obj);
 	}
+
+	// Sort the proposals based on the confidence score in descending order
+	std::sort(proposals.begin(), proposals.end(), [](Object& a, Object& b) -> bool
+		{ return a.prob > b.prob; });
 }
 
 /// <summary>
@@ -171,15 +175,16 @@ void GenerateYoloxProposals(float* feat_ptr, int proposal_length)
 /// </summary>
 void NmsSortedBboxes()
 {
+	// Remove the picked proposals for the previous model outptut
+	proposal_indices.clear();
+
 	// Iterate through the object proposals
 	for (int i = 0; i < proposals.size(); i++)
 	{
 		Object& a = proposals[i];
 
 		// Create OpenCV rectangle for the Object bounding box
-		cv::Rect_<float> aRect = cv::Rect_<float>(a.x0, a.y0, a.width, a.height);
-		// Get the bounding box area
-		float aRect_area = aRect.area();
+		cv::Rect_<float> rect_a = cv::Rect_<float>(a.x0, a.y0, a.width, a.height);
 
 		bool keep = true;
 
@@ -189,20 +194,19 @@ void NmsSortedBboxes()
 			Object& b = proposals[j];
 
 			// Create OpenCV rectangle for the Object bounding box
-			cv::Rect_<float> bRect = cv::Rect_<float>(b.x0, b.y0, b.width, b.height);
+			cv::Rect_<float> rect_b = cv::Rect_<float>(b.x0, b.y0, b.width, b.height);
 
 			// Calculate the area where the two object bounding boxes overlap
-			float inter_area = (aRect & bRect).area();
+			float inter_area = (rect_a & rect_b).area();
 			// Calculate the union area of both bounding boxes
-			float union_area = aRect_area + bRect.area() - inter_area;
+			float union_area = rect_a.area() + rect_b.area() - inter_area;
 			// Ignore object proposals that overlap selected objects too much
 			if (inter_area / union_area > nms_thresh)
 				keep = false;
 		}
 
 		// Keep object proposals that do not overlap selected objects too much
-		if (keep)
-			proposal_indices.push_back(i);
+		if (keep) proposal_indices.push_back(i);
 	}
 }
 
@@ -221,7 +225,7 @@ void draw_objects(cv::Mat& image, std::vector<Object>& objects)
 	{
 		// Get the next selected object
 		Object& obj = objects[i];
-		cv::Rect_<float> rect = cv::Rect_<float>(obj.x0 / scaleX, obj.y0 / scaleY, obj.width / scaleX, obj.height / scaleY);
+		cv::Rect_<float> rect = cv::Rect_<float>(obj.x0 / scale_x, obj.y0 / scale_y, obj.width / scale_x, obj.height / scale_y);
 		// Get the predicted class label and associated confidence value
 		std::string label = class_names[obj.label];
 		float confidence = obj.prob * 100.0;
@@ -250,10 +254,10 @@ void draw_objects(cv::Mat& image, std::vector<Object>& objects)
 		// Draw text box
 		cv::rectangle(image, text_box, (color * 255), -1);
 		// Add text
-		cv::Mat grayMat = cv::Mat(1, 1, CV_8UC3);
-		grayMat.setTo(color);
-		cv::cvtColor(grayMat, grayMat, cv::COLOR_BGR2GRAY);
-		cv::Scalar txt_color = grayMat.data[0] > 0.5 ? cv::Scalar(0, 0, 0) : cv::Scalar(255, 255, 255);
+		cv::Mat gray_mat = cv::Mat(1, 1, CV_8UC3);
+		gray_mat.setTo(color);
+		cv::cvtColor(gray_mat, gray_mat, cv::COLOR_BGR2GRAY);
+		cv::Scalar txt_color = gray_mat.data[0] > 0.5 ? cv::Scalar(0, 0, 0) : cv::Scalar(255, 255, 255);
 		cv::putText(image, text, cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX, font_size, txt_color, font_thickness);
 	}
 
@@ -273,21 +277,27 @@ int main(int argc, const char* argv[])
 {
 	// Load an input image
 	cv::Mat image = cv::imread(argv[2]);
-	cv::Mat input_img = image.clone();
+	cv::Mat input_image = image.clone();
 	// Convert image from BGR to RGB format
-	cv::cvtColor(input_img, input_img, cv::COLOR_BGR2RGB);
+	cv::cvtColor(input_image, input_image, cv::COLOR_BGR2RGB);
 
 	// The dimensions of the source input image
-	int img_w = input_img.cols;
-	int img_h = input_img.rows;
+	int img_w = input_image.cols;
+	int img_h = input_image.rows;
 	// Calculate new input dimensions based on the max stride value
 	int input_w = (int)(strides.back() * std::roundf(img_w / strides.back()));
 	int input_h = (int)(strides.back() * std::roundf(img_h / strides.back()));
+
+	// The number of color channels
+	int n_channels = input_image.channels();
+	// Get model input dimensions
+	int n_pixels = input_w * input_h;
+
 	// Calculate the value used to adjust the model output to the source image resolution
-	scaleX = input_w / (img_w * 1.0);
-	scaleY = input_h / (img_h * 1.0);
+	scale_x = input_w / (img_w * 1.0);
+	scale_y = input_h / (img_h * 1.0);
 	// Resize input image to new dimensions
-	cv::resize(input_img, input_img, cv::Size(input_w, input_h));
+	cv::resize(input_image, input_image, cv::Size(input_w, input_h));
 
 	// Generate the grid and stride values based on input resolution
 	GenerateGridsAndStride(input_h, input_w);
@@ -299,14 +309,13 @@ int main(int argc, const char* argv[])
 	// Get the names of available compute devices
 	std::cout << "\nAvailable Devices: ";
 	std::vector<std::string> available_devices = core.get_available_devices();
-	for (std::string device : available_devices)
-		std::cout << device << " ";
+	for (std::string device : available_devices) std::cout << device << " ";
 	std::cout << "\n\n";
 
 	// Read in a model file
 	std::shared_ptr<ov::Model> model = core.read_model(argv[1]);
 	// Update model input dimensions
-	model->reshape({ 1, 3, input_img.rows, input_img.cols });
+	model->reshape({ 1, 3, input_image.rows, input_image.cols });
 	// Print model input and output
 	printInputAndOutputsInfo(*model);
 	// Compile and load network to device
@@ -321,27 +330,16 @@ int main(int argc, const char* argv[])
 	ov::Tensor input_tensor = infer_request.get_input_tensor(0);
 	// Get a pointer to the input tensor data
 	float* input_data = input_tensor.data<float>();
-
-	// The number of color channels
-	int num_channels = input_img.channels();
-	// Get model input dimensions
-	int H = input_tensor.get_shape()[2];
-	int W = input_tensor.get_shape()[3];
-	int nPixels = W * H;
-
+	
 	// Start timer for measuring inference speed
 	auto start = std::chrono::high_resolution_clock::now();
 
 	// Iterate over each pixel in image
-	for (int p = 0; p < nPixels; p++)
+	for (int p = 0; p < n_pixels; p++)
 	{
-		// Iterate over each color channel for each pixel in image
-		for (int ch = 0; ch < num_channels; ++ch)
-		{
-			int source_idx = p * num_channels + ch;
-			int dest_idx = ch * nPixels + p;
-			input_data[dest_idx] = (input_img.data[source_idx] / 255.0f);
-		}
+		input_data[0 * n_pixels + p] = input_image.data[p * n_channels + 0] / 255.0f;
+		input_data[1 * n_pixels + p] = input_image.data[p * n_channels + 1] / 255.0f;
+		input_data[2 * n_pixels + p] = input_image.data[p * n_channels + 2] / 255.0f;
 	}
 
 	// Perform inference
@@ -359,24 +357,14 @@ int main(int argc, const char* argv[])
 	float fps = (1000.0 / duration.count());
 	printf("Inference time: %dms (i.e., %.2ffps)\n\n", (int)duration.count(), fps);
 
-	// Remove the proposals for the previous model output
-	proposals.clear();
 	// Generate new proposals for the current model output
 	GenerateYoloxProposals(out_data, output_tensor.get_shape()[2]);
 
-	// Sort the generated proposals based on their confidence scores
-	auto compare_func = [](Object& a, Object& b) -> bool
-	{ return a.prob > b.prob; };
-	std::sort(proposals.begin(), proposals.end(), compare_func);
-
-	// Remove the picked proposals for the previous model outptut
-	proposal_indices.clear();
 	// Pick detected objects to keep using Non-maximum Suppression
 	NmsSortedBboxes();
 	// Get the number of objects detected
 	printf("Detected %d objects\n", (int)proposal_indices.size());
-	// Resize input image back to source resolution
-	//cv::resize(input_img, input_img, cv::Size(img_w, img_h));
+	
 	// Annotate source image with model predictions
 	draw_objects(image, proposals);
 }
