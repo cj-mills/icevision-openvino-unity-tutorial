@@ -116,6 +116,9 @@ extern "C" {
 	/// <param name="width">The model input width</param>
 	void GenerateGridsAndStride(int height, int width)
 	{
+		// Remove the values for the previous input resolution
+		grid_strides.clear();
+
 		// Iterate through each stride value
 		for (auto stride : strides)
 		{
@@ -175,7 +178,6 @@ extern "C" {
 		scale_y = input_h / (img_h * 1.0);
 
 		// Generate the grid and stride values based on input resolution
-		grid_strides.clear();
 		GenerateGridsAndStride(input_h, input_w);
 
 		// Try updating the model input dimensions
@@ -270,9 +272,8 @@ extern "C" {
 		}
 
 		// Sort the proposals based on the confidence score in descending order
-		auto compare_func = [](Object& a, Object& b) -> bool
-		{ return a.prob > b.prob; };
-		std::sort(proposals.begin(), proposals.end(), compare_func);
+		std::sort(proposals.begin(), proposals.end(), [](Object& a, Object& b) -> bool
+			{ return a.prob > b.prob; });
 	}
 
 	/// <summary>
