@@ -4,7 +4,7 @@
 
 
 
-![output](../images/output.jpg)
+![output](./images/output.jpg)
 
 
 
