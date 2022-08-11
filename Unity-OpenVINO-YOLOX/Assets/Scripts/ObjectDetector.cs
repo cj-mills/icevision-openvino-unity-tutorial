@@ -255,13 +255,14 @@ public class ObjectDetector : MonoBehaviour
     /// </summary>
     private void GetOpenVINOModels()
     {
-        // Get the paths for the .pt file for each model
+        // Get the paths for each model folder
         foreach (string dir in System.IO.Directory.GetDirectories($"{Application.streamingAssetsPath}/{openvinoModelsDir}"))
         {
             string modelName = dir.Split('\\')[1];
 
             modelNames.Add(modelName.Substring(0, modelName.Length));
 
+            // Get the paths for the XML file for each model
             foreach (string file in System.IO.Directory.GetFiles(dir))
             {
                 if (file.EndsWith(".xml"))
