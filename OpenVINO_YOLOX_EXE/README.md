@@ -4,7 +4,7 @@
 
 
 
-![output](G:\Projects\GitHub\icevision-openvino-unity-tutorial\OpenVINO_YOLOX_EXE\images\output.jpg)
+![output](../images/output.jpg)
 
 
 
