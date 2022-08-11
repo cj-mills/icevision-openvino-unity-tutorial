@@ -10,7 +10,7 @@
 
 
 
-**Release Folder**: `icevision-openvino-unity-tutorial\OpenVINO_YOLOX_EXE\x64\Release\`
+**Release Folder**: `OpenVINO_YOLOX_EXE\x64\Release\`
 
 
 
