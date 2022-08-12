@@ -807,6 +807,11 @@ public class ObjectDetector : MonoBehaviour
         if (displayFPS) GUI.Label(fpsRect, new GUIContent($"FPS: {fps}"), style);
     }
 
+    public void Quit()
+    {
+        Application.Quit();
+    }
+
     private void OnDisable()
     {
         FreeResources();
