@@ -58,3 +58,5 @@ https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-9
 [Part 2](https://christianjmills.com/IceVision-to-OpenVINO-to-Unity-Tutorial-2/): covers creating a dynamic link library (DLL) file in Visual Studio to perform inference with OpenVINO
 
 [Part 3](https://christianjmills.com/IceVision-to-OpenVINO-to-Unity-Tutorial-3/):  covers performing object detection in a Unity project with OpenVINO
+
+[Follow up](https://christianjmills.com/ONNX-DiretML-to-Unity-Tutorial-1/): covers how to use ONNX Runtime and DirectML instead of OpenVINO
