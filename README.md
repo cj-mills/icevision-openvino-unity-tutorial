@@ -1,18 +1,13 @@
 # IceVision → OpenVINO → Unity Tutorial
-This tutorial covers training an object detector with the [IceVision](https://airctic.com/0.12.0/) library and implementing it in a [Unity](https://unity.com/) game engine project using the [OpenVINO Toolkit](https://docs.openvino.ai/latest/index.html).
-
-
-
-https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-97f9-433c5634230a.mp4
-
 
 ## Tutorial Links
 * [Part 1](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-1/): Train a YOLOX model using IceVision and export it to OpenVINO. 
 * [Part 2](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-2/): Create a dynamic link library (DLL) file in Visual Studio to perform object detection with a YOLOX model using OpenVINO. 
 * [Part 3](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-3/):  Perform object detection in a Unity project with OpenVINO. 
-* [Follow up](https://christianjmills.com/posts/onnx-directml-unity-tutorial/part-1/): covers how to use ONNX Runtime and DirectML instead of OpenVINO
+* [Follow up](https://christianjmills.com/posts/onnx-directml-unity-tutorial/part-1/): Use ONNX Runtime and DirectML instead of OpenVINO.
 
-
+## Demo Video
+https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-97f9-433c5634230a.mp4
 
 ## Training Code
 
