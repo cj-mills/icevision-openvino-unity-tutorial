@@ -6,6 +6,14 @@ This tutorial covers training an object detector with the [IceVision](https://ai
 https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-97f9-433c5634230a.mp4
 
 
+## Tutorial Links
+* [Part 1](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-1/): Train a YOLOX model using IceVision and export it to OpenVINO. 
+* [Part 2](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-2/): Create a dynamic link library (DLL) file in Visual Studio to perform object detection with a YOLOX model using OpenVINO. 
+* [Part 3](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-3/):  Perform object detection in a Unity project with OpenVINO. 
+
+[Follow up](https://christianjmills.com/posts/onnx-directml-unity-tutorial/part-1/): covers how to use ONNX Runtime and DirectML instead of OpenVINO
+
+
 
 ## Training Code
 
@@ -46,17 +54,3 @@ https://user-images.githubusercontent.com/9126128/183220227-868d552b-c67e-48b6-9
 | two_up         | ![ two_up](./images/two_up.jpg) |
 | two_up_inverted         | ![two_up_inverted](./images/two_up_inverted.jpg) |
 </details>
-
-
-
-
-
-## Tutorial Links
-
-[Part 1](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-1/): covers training and exporting the model
-
-[Part 2](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-2/): covers creating a dynamic link library (DLL) file in Visual Studio to perform inference with OpenVINO
-
-[Part 3](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-3/):  covers performing object detection in a Unity project with OpenVINO
-
-[Follow up](https://christianjmills.com/posts/onnx-directml-unity-tutorial/part-1/): covers how to use ONNX Runtime and DirectML instead of OpenVINO
