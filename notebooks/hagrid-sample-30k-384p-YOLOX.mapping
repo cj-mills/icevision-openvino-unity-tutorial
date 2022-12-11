@@ -5,10 +5,6 @@
 		<IR name="input" output_port_id="0" />
 	</map>
 	<map>
-		<framework name="Divide_4571" output_port_id="463" />
-		<IR name="Divide_4571" output_port_id="2" />
-	</map>
-	<map>
 		<framework name="468" output_port_id="468" />
 		<IR name="468" output_port_id="4" />
 	</map>
@@ -625,10 +621,6 @@
 		<IR name="694" output_port_id="1" />
 	</map>
 	<map>
-		<framework name="1101" output_port_id="1101" />
-		<IR name="1101" output_port_id="0" />
-	</map>
-	<map>
 		<framework name="699" output_port_id="699" />
 		<IR name="699" output_port_id="3" />
 	</map>
@@ -797,28 +789,8 @@
 		<IR name="845" output_port_id="3" />
 	</map>
 	<map>
-		<framework name="846" output_port_id="846" />
-		<IR name="846" output_port_id="1" />
-	</map>
-	<map>
-		<framework name="848" output_port_id="848" />
-		<IR name="848" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="849" output_port_id="849" />
-		<IR name="849" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="850" output_port_id="850" />
-		<IR name="850" output_port_id="4" />
-	</map>
-	<map>
-		<framework name="851" output_port_id="851" />
-		<IR name="851" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="852" output_port_id="852" />
-		<IR name="852" output_port_id="2" />
+		<framework name="477" output_port_id="477" />
+		<IR name="477" output_port_id="0" />
 	</map>
 	<map>
 		<framework name="853" output_port_id="853" />
@@ -1001,30 +973,6 @@
 		<IR name="856" output_port_id="3" />
 	</map>
 	<map>
-		<framework name="857" output_port_id="857" />
-		<IR name="857" output_port_id="1" />
-	</map>
-	<map>
-		<framework name="859" output_port_id="859" />
-		<IR name="859" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="860" output_port_id="860" />
-		<IR name="860" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="861" output_port_id="861" />
-		<IR name="861" output_port_id="4" />
-	</map>
-	<map>
-		<framework name="862" output_port_id="862" />
-		<IR name="862" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="863" output_port_id="863" />
-		<IR name="863" output_port_id="2" />
-	</map>
-	<map>
 		<framework name="864" output_port_id="864" />
 		<IR name="864" output_port_id="2" />
 	</map>
@@ -1203,30 +1151,6 @@
 	<map>
 		<framework name="867" output_port_id="867" />
 		<IR name="867" output_port_id="3" />
-	</map>
-	<map>
-		<framework name="868" output_port_id="868" />
-		<IR name="868" output_port_id="1" />
-	</map>
-	<map>
-		<framework name="870" output_port_id="870" />
-		<IR name="870" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="871" output_port_id="871" />
-		<IR name="871" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="872" output_port_id="872" />
-		<IR name="872" output_port_id="4" />
-	</map>
-	<map>
-		<framework name="873" output_port_id="873" />
-		<IR name="873" output_port_id="0" />
-	</map>
-	<map>
-		<framework name="874" output_port_id="874" />
-		<IR name="874" output_port_id="2" />
 	</map>
 	<map>
 		<framework name="875" output_port_id="875" />
