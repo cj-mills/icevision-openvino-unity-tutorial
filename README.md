@@ -1,5 +1,14 @@
 # IceVision → OpenVINO → Unity Tutorial
 
+## ⚠️ ARCHIVED REPOSITORY ⚠️
+
+This tutorial code will no longer receive updates as the IceVision library no longer appears in development. For the latest and improved version of this tutorial that uses PyTorch directly, please visit the new tutorial repositories linked below:
+
+- [pytorch-yolox-object-detection-tutorial-code](https://github.com/cj-mills/pytorch-yolox-object-detection-tutorial-code)
+- [barracuda-inference-yolox-demo](http://barracuda-inference-yolox-demo)
+
+---
+
 ## Tutorial Links
 * [Part 1](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-1/): Train a YOLOX model using IceVision and export it to OpenVINO. 
 * [Part 2](https://christianjmills.com/posts/icevision-openvino-unity-tutorial/part-2/): Create a dynamic link library (DLL) file in Visual Studio to perform object detection with a YOLOX model using OpenVINO. 
