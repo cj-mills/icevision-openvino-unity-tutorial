@@ -5,7 +5,7 @@
 This tutorial code will no longer receive updates as the IceVision library no longer appears in development. For the latest and improved version of this tutorial that uses PyTorch directly, please visit the new tutorial repositories linked below:
 
 - [pytorch-yolox-object-detection-tutorial-code](https://github.com/cj-mills/pytorch-yolox-object-detection-tutorial-code)
-- [barracuda-inference-yolox-demo](http://barracuda-inference-yolox-demo)
+- [barracuda-inference-yolox-demo](https://github.com/cj-mills/barracuda-inference-yolox-demo)
 
 ---
 
